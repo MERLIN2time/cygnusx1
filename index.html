@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYGNUS X-1 | COMMAND CORE</title>
+    <style>
+        body {
+            background-color: #0a0a0a;
+            color: #00FF00;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            text-shadow: 0 0 5px #00FF00;
+            overflow: hidden;
+        }
+
+        /* CRT SCANLINES */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            z-index: 100;
+            background-size: 100% 3px;
+            pointer-events: none;
+            opacity: 0.2;
+        }
+
+        /* TOP HUD: CLOCK & SYSTEM DATA */
+        #hud-monitor {
+            position: fixed;
+            top: 30px; left: 30px;
+            font-size: 0.9rem; 
+            text-align: left;
+            border-left: 3px solid #00FF00;
+            padding-left: 15px;
+            display: none;
+            z-index: 110;
+            line-height: 1.5;
+        }
+
+        /* REAL-TIME CLOCK */
+        #system-time {
+            position: fixed;
+            top: 30px; right: 40px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            display: none;
+            z-index: 110;
+        }
+
+        /* BOTTOM FOOTER LETTERS */
+        #footer-data {
+            position: fixed;
+            bottom: 15px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #006600;
+            letter-spacing: 4px;
+            z-index: 105;
+            text-transform: uppercase;
+        }
+
+        /* SCALED BOOT SCREEN */
+        #boot-screen {
+            width: 85%;
+            max-width: 900px;
+            text-align: left;
+            font-size: 1.2rem; 
+            display: block;
+        }
+
+        #login-screen, #loading-screen {
+            display: none;
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* SCALED UP INTERFACE */
+        #login-box, #loading-box {
+            border: 2px solid #00FF00;
+            padding: 60px;
+            background: rgba(0, 20, 0, 0.4);
+            box-shadow: 0 0 40px rgba(0, 255, 0, 0.4);
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            position: relative;
+        }
+
+        #scanner {
+            width: 100%;
+            height: 5px;
+            background: #00FF00;
+            position: absolute;
+            left: 0; top: 0;
+            box-shadow: 0 0 25px #00FF00;
+            display: none;
+            animation: scanMove 2s infinite linear;
+        }
+
+        @keyframes scanMove {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        .progress-container {
+            width: 100%;
+            border: 1px solid #00FF00;
+            height: 20px;
+            margin-top: 30px;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background-color: #00FF00;
+            transition: width 5s linear;
+        }
+
+        input {
+            background: rgba(0,0,0,0.6);
+            border: 1px solid #00FF00;
+            color: #00FF00;
+            font-family: inherit;
+            font-size: 1.2rem;
+            width: 90%;
+            margin-top: 20px;
+            padding: 12px;
+            text-align: center;
+            outline: none;
+        }
+
+        #secret-content {
+            display: none;
+            width: 95%;
+            max-width: 1200px;
+            padding: 60px 0;
+        }
+
+        #welcomeHeader {
+            font-size: 2.8rem;
+            border-left: 8px solid #00FF00;
+            padding-left: 25px;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+        }
+
+        .module {
+            border: 1px solid #00FF00;
+            padding: 40px;
+            margin-top: 30px;
+            background: rgba(0, 255, 0, 0.03);
+        }
+
+        img, video {
+            width: 100%;
+            border: 1px solid #00FF00;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="hud-monitor">
+        [ NODE: CYGNUS_X1_MAIN ]<br>
+        [ STAT: ENCRYPTED ]<br>
+        CPU_LOAD: <span id="cpu">0</span>%<br>
+        XFER_RATE: <span id="speed">0</span> MB/s
+    </div>
+
+    <div id="system-time">00:00:00</div>
+
+    <div id="footer-data">
+        KERNEL_SYNC_7G // STABILIZING_DATA_STREAM // HEX_ID: <span id="hex-scroll">00000000</span> // PORT: 0x99
+    </div>
+
+    <div id="boot-screen">
+        <p id="boot-text"></p>
+    </div>
+
+    <div id="login-screen">
+        <div id="login-box">
+            <h1 style="font-size: 1.5rem; letter-spacing: 3px;">[ SECURITY_GATEWAY_v4.0 ]</h1>
+            <p style="font-size: 0.8rem; opacity: 0.7;">WARNING: UNAUTHORIZED ACCESS IS LOGGED BY INTERSTELLAR LAW</p>
+            <hr border="1" color="#00FF00" style="margin: 25px 0;">
+            
+            <p style="font-size: 0.9rem;">ENTER_COMMANDER_CREDENTIALS:</p>
+            <input type="text" id="userInput" placeholder="COMMANDER_ID" autocomplete="off">
+            
+            <p style="font-size: 0.9rem; margin-top: 25px;">VALIDATE_SECURITY_KEY:</p>
+            <input type="password" id="passInput" placeholder="PASSKEY">
+            
+            <p id="error-msg" style="color: yellow; font-size: 0.8rem; margin-top: 20px;"></p>
+        </div>
+    </div>
+
+    <div id="loading-screen">
+        <div id="loading-box">
+            <div id="scanner"></div>
+            <h2 style="font-size: 1.6rem;">[ IDENTITY_CONFIRMED ]</h2>
+            <p style="font-size: 0.8rem;">BYPASSING ENCRYPTION FIREWALLS...</p>
+            <div class="progress-container"><div id="progress-bar"></div></div>
+            <p style="font-size: 0.75rem; margin-top: 20px;">DECODING SATELLITE CHANNELS FROM SECTOR 7G...</p>
+        </div>
+    </div>
+
+    <div id="secret-content">
+        <h1 id="welcomeHeader">ACCESS GRANTED</h1>
+        <div class="module">
+            <h3 style="font-size: 1rem; color: #ffff00;">[ DECRYPTED_SATELLITE_MSG ]</h3>
+            <h2 id="scrambled" style="letter-spacing: 10px; font-size: 2.2rem; margin: 25px 0;">********</h2>
+            <button onclick="decode()" id="decBtn" style="background:#00FF00; color:#000; border:none; padding:15px 30px; cursor:pointer; font-family:inherit; font-size: 1rem; font-weight:bold;">INITIALIZE_DECODER</button>
+        </div>
+        <div id="media-vault" class="module"></div>
+    </div>
+
+    <script>
+        const uInput = document.getElementById('userInput');
+        const pInput = document.getElementById('passInput');
+
+        // CLOCK & HUD UPDATES
+        function updateHUD() {
+            const now = new Date();
+            document.getElementById('system-time').innerText = now.toLocaleTimeString('en-GB');
+            
+            document.getElementById('cpu').innerText = Math.floor(Math.random() * 10 + 25);
+            document.getElementById('speed').innerText = (Math.random() * 10 + 890).toFixed(0);
+            
+            const hex = Array.from({length: 10}, () => Math.floor(Math.random() * 16).toString(16)).join('').toUpperCase();
+            document.getElementById('hex-scroll').innerText = hex;
+        }
+        setInterval(updateHUD, 1000);
+
+        // 1. BOOT SEQUENCE
+        const bootLines = [
+            "> INITIALIZING BIOS_v4.0.01...",
+            "> ANALYZING HARDWARE TOPOLOGY...",
+            "> ALLOCATING QUANTUM BUFFER... [SUCCESS]",
+            "> CONNECTING TO ORBITAL SATELLITE [7G]...",
+            "> SECURING TERMINAL ENVIRONMENT...",
+            "> SYSTEM_READY_FOR_INPUT."
+        ];
+        let line = 0;
+        function runBoot() {
+            if (line < bootLines.length) {
+                document.getElementById('boot-text').innerHTML += bootLines[line] + "<br>";
+                line++;
+                setTimeout(runBoot, 600);
+            } else {
+                setTimeout(() => {
+                    document.getElementById('boot-screen').style.display = "none";
+                    document.getElementById('login-screen').style.display = "flex";
+                    document.getElementById('system-time').style.display = "block";
+                    uInput.focus();
+                }, 800);
+            }
+        }
+
+        // 2. LOGIN LOGIC
+        pInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const username = uInput.value.trim();
+                const password = pInput.value.toLowerCase().trim();
+                const codes = ["aW50ZXJzdGVsbGFy", "aW50ZXN0ZWxsYXI=", "aW50ZXJzdGVsbGVy", "aW50ZXN0ZWxsZXI="];
+
+                if (username !== "" && codes.includes(btoa(password))) {
+                    startLoading(username);
+                } else {
+                    document.getElementById('error-msg').innerText = "!! AUTHENTICATION_CRITICAL_FAILURE !!";
+                    computerSpeak("Access denied. Intruders will be tracked.");
+                }
+            }
+        });
+
+        function startLoading(name) {
+            document.getElementById('login-screen').style.display = "none";
+            document.getElementById('loading-screen').style.display = "flex";
+            document.getElementById('hud-monitor').style.display = "block";
+            document.getElementById('scanner').style.display = "block";
+
+            // VOICE WELCOME
+            computerSpeak(`Identity verified. Welcome back Commander ${name}. Opening secure link to Sector 7G. Biometric scanning in progress.`);
+
+            setTimeout(() => { document.getElementById('progress-bar').style.width = "100%"; }, 100);
+            setTimeout(() => { unlock(name); }, 5000);
+        }
+
+        function unlock(name) {
+            document.getElementById('loading-screen').style.display = "none";
+            document.getElementById('secret-content').style.display = "block";
+            document.body.style.overflow = "auto";
+            document.getElementById('welcomeHeader').innerText = `COMMANDER: ${name.toUpperCase()}`;
+            
+            document.getElementById('media-vault').innerHTML = `
+                <h3 style="font-size: 0.9rem;">[ VIDEO_ARCHIVE_01 ]</h3>
+                <video controls loop><source src="mission1.mp4" type="video/mp4"></video>
+                <h3 style="font-size: 0.9rem; margin-top: 30px;">[ ORBITAL_IMAGERY ]</h3>
+                <img src="andromeeda.webp">
+                <audio controls style="width: 100%; margin-top:30px;"><source src="morse.wav"></audio>
+            `;
+            computerSpeak("Encryption bypassed. All satellite data has been uploaded to your terminal.");
+        }
+
+        function decode() {
+            const secret = "TARGET: ANDROMEDA SECTOR 7G";
+            let i = 0;
+            document.getElementById('decBtn').style.display = "none";
+            const itv = setInterval(() => {
+                document.getElementById('scrambled').innerText = secret.substring(0, i) + Math.random().toString(36).substring(6).toUpperCase();
+                i++;
+                if (i > secret.length) {
+                    clearInterval(itv);
+                    document.getElementById('scrambled').innerText = secret;
+                }
+            }, 100);
+        }
+
+        // ORIGINAL VOICE SETTINGS (From a2.html)
+        function computerSpeak(message) {
+            window.speechSynthesis.cancel();
+            const speech = new SpeechSynthesisUtterance(message);
+            const voices = window.speechSynthesis.getVoices();
+            const voice = voices.find(v => v.name.includes('Samantha') || v.name.includes('Zira') || v.name.includes('Google US English'));
+            
+            if (voice) speech.voice = voice;
+            speech.lang = 'en-US';
+            speech.pitch = 0.8; 
+            speech.rate = 0.9;  
+            window.speechSynthesis.speak(speech);
+        }
+
+        window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+        window.onload = runBoot;
+    </script>
+</body>
+</html>
