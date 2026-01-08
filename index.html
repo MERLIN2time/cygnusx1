@@ -340,6 +340,32 @@
 
         window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
         window.onload = runBoot;
+    // --- THE REAL VISITOR ENGINE ---
+async function initializeRealCounter() {
+    try {
+        // Use a unique ID so your count is private to your site
+        // Change 'COMMANDER_BETA_NODE_1' to any name you want
+        const mySiteID = "COMMANDER_BETA_NODE_1"; 
+        
+        // This line tells the internet to add +1 to your count
+        const response = await fetch(`https://api.counterapi.dev/v1/cygnus_system/${mySiteID}/up`);
+        const data = await response.json();
+        
+        // This updates the HUD with the real number from the database
+        const countElement = document.getElementById('real-count');
+        if (countElement) {
+            countElement.innerText = data.count.toLocaleString();
+        }
+        
+        console.log("Global Node Sync Complete. Current hits: " + data.count);
+    } catch (err) {
+        console.log("Uplink failed. Using local simulation mode.");
+        document.getElementById('real-count').innerText = "OFFLINE";
+    }
+}
+
+// Start the counter as soon as the terminal turns on
+window.addEventListener('load', initializeRealCounter);
     </script>
 </body>
 </html>
